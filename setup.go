@@ -1,12 +1,18 @@
-package alist
+package auth
 
 import (
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/axiaoxin-com/ratelimiter"
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	frontEndBaseUrl string
 )
 
 func initVar() {
@@ -27,6 +33,12 @@ func initVar() {
 	aliClientSecret = os.Getenv("ALI_DRIVE_CLIENT_SECRET")
 	baiduClientId = os.Getenv("BAIDU_CLIENT_ID")
 	baiduClientSecret = os.Getenv("BAIDU_CLIENT_SECRET")
+	frontEndBaseUrl = os.Getenv("API_BASE")
+	if strings.TrimSpace(frontEndBaseUrl) == "" {
+		panic(fmt.Errorf("ENV API_BASE is empty"))
+	}
+	baiduCallbackUri = frontEndBaseUrl + "/tool/baidu/callback"
+	oneDriveCallBackUri = frontEndBaseUrl + "/tool/onedrive/callback"
 }
 
 func Setup(g *gin.RouterGroup) {
@@ -34,8 +46,17 @@ func Setup(g *gin.RouterGroup) {
 	g.GET("/ali/qr", Qr)
 	g.POST("/ali/ck", Ck)
 	g.POST("/onedrive/get_refresh_token", onedriveToken)
+	// CORS should be settle by caddy, nginx or other reverse proxy middleware
+	g.OPTIONS("/onedrive/get_refresh_token", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Status(204)
+	})
 	g.POST("/onedrive/get_site_id", spSiteID)
 	g.GET("/baidu/get_refresh_token", baiduToken)
+	g.GET("/115/auth_device_code", Open115Qrcode)
+	g.POST("/115/get_token", Open115Token)
 	aliOpen := g.Group("/ali_open")
 	aliOpen.Any("/limit", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
