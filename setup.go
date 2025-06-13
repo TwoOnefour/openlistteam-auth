@@ -2,13 +2,12 @@ package auth
 
 import (
 	"fmt"
+	"github.com/axiaoxin-com/ratelimiter"
+	"github.com/gin-gonic/gin"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/axiaoxin-com/ratelimiter"
-	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -31,22 +30,28 @@ func initVar() {
 	// client
 	aliClientID = os.Getenv("ALI_DRIVE_CLIENT_ID")
 	aliClientSecret = os.Getenv("ALI_DRIVE_CLIENT_SECRET")
+
 	baiduClientId = os.Getenv("BAIDU_CLIENT_ID")
 	baiduClientSecret = os.Getenv("BAIDU_CLIENT_SECRET")
+	baiduCallbackUri = frontEndBaseUrl + "/tool/baidu/callback"
+
 	frontEndBaseUrl = os.Getenv("API_BASE")
 	if strings.TrimSpace(frontEndBaseUrl) == "" {
 		panic(fmt.Errorf("ENV API_BASE is empty"))
 	}
-	baiduCallbackUri = frontEndBaseUrl + "/tool/baidu/callback"
 	oneDriveCallBackUri = frontEndBaseUrl + "/tool/onedrive/callback"
+
+	dropBoxAppId = os.Getenv("DROPBOX_APP_ID")
+	dropBoxAppSecret = os.Getenv("DROPBOX_APP_SECRET")
+	if dropBoxAppId == "" || dropBoxAppSecret == "" {
+		panic(fmt.Errorf("DROPBOX_APP_ID/APP_SECRET is empty"))
+	}
+
 }
 
-func Setup(g *gin.RouterGroup) {
-	initVar()
-	g.GET("/ali/qr", Qr)
-	g.POST("/ali/ck", Ck)
+func SetupOnedriveApi(g *gin.RouterGroup) {
 	g.POST("/onedrive/get_refresh_token", onedriveToken)
-	// CORS should be settle by caddy, nginx or other reverse proxy middleware
+	// CORS should be settle by caddy, nginx or other reverse proxy middleware, but for test purposes, I set it here
 	g.OPTIONS("/onedrive/get_refresh_token", func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -54,9 +59,11 @@ func Setup(g *gin.RouterGroup) {
 		c.Status(204)
 	})
 	g.POST("/onedrive/get_site_id", spSiteID)
-	g.GET("/baidu/get_refresh_token", baiduToken)
-	g.GET("/115/auth_device_code", Open115Qrcode)
-	g.POST("/115/get_token", Open115Token)
+}
+
+func SetUpAliApi(g *gin.RouterGroup) {
+	g.GET("/ali/qr", Qr)
+	g.POST("/ali/ck", Ck)
 	aliOpen := g.Group("/ali_open")
 	aliOpen.Any("/limit", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
@@ -91,4 +98,26 @@ func Setup(g *gin.RouterGroup) {
 	aliOpenLimit.Any("/refresh", aliAccessToken)
 	aliOpenLimit.Any("/code", aliAccessToken)
 	aliOpenLimit.Any("/qr", aliQrcode)
+}
+
+func SetupBaiduApi(g *gin.RouterGroup) {
+	g.GET("/baidu/get_refresh_token", baiduToken)
+}
+
+func Setup115Api(g *gin.RouterGroup) {
+	g.GET("/115/auth_device_code", Open115Qrcode)
+	g.POST("/115/get_token", Open115Token)
+}
+
+func SetupDropboxApi(g *gin.RouterGroup) {
+	g.POST("/dropbox/token", getDropBoxToken)
+}
+
+func Setup(g *gin.RouterGroup) {
+	initVar()
+	SetUpAliApi(g)
+	SetupOnedriveApi(g)
+	SetupBaiduApi(g)
+	Setup115Api(g)
+	SetupDropboxApi(g)
 }
