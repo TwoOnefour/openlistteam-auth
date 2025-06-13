@@ -1,10 +1,10 @@
 package common
 
 import (
+	"github.com/twoonefour/alist-auth/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"log"
 )
 
 type Response struct {
@@ -14,7 +14,7 @@ type Response struct {
 }
 
 func Error(c *gin.Context, err error) {
-	log.Printf("[ERROR] %v\n", err)
+	utils.GetLogger(c).Error("[ERROR] %v\n", err)
 	c.AbortWithStatusJSON(http.StatusInternalServerError, Response{
 		Code:    http.StatusInternalServerError,
 		Message: err.Error(),

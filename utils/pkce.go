@@ -7,7 +7,7 @@ import (
 )
 
 func GenerateCodeVerifier(n int) (string, error) {
-	// generate CodeVerifier for 115Open
+	// generate CodeVerifier for 115_Open
 	if n < 43 || n > 128 {
 		return "", errors.New("code_verifier length must be between 43 and 128")
 	}

@@ -26,10 +26,19 @@ func LoggerMiddleware() gin.HandlerFunc {
 			"user_agent": c.Request.UserAgent(),
 			"duration":   duration.Seconds(),
 		})
-
+		c.Set("logger", entry)
 		if len(c.Errors) > 0 {
 			entry.Error(c.Errors.String())
 		}
 
 	}
+}
+
+func GetLogger(c *gin.Context) *logrus.Entry {
+	if le, ok := c.Get("logger"); ok {
+		if entry, ok2 := le.(*logrus.Entry); ok2 {
+			return entry
+		}
+	}
+	return logrus.NewEntry(logrus.StandardLogger())
 }
