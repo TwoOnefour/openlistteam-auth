@@ -113,6 +113,24 @@ func SetupDropboxApi(g *gin.RouterGroup) {
 	g.POST("/dropbox/token", getDropBoxToken)
 }
 
+func SetupWopanApi(g *gin.RouterGroup) {
+	g.POST("/wopan/login", wopanLogin)
+	g.POST("/wopan/verify_code", wopanVerifyCode)
+	g.OPTIONS("/wopan/verify_code", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Status(204)
+	})
+
+	g.OPTIONS("/wopan/login", func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Status(204)
+	})
+}
+
 func Setup(g *gin.RouterGroup) {
 	initVar()
 	SetUpAliApi(g)
@@ -120,4 +138,5 @@ func Setup(g *gin.RouterGroup) {
 	SetupBaiduApi(g)
 	Setup115Api(g)
 	SetupDropboxApi(g)
+	SetupWopanApi(g)
 }
